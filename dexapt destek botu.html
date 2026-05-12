@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEXAPT | Görsel Destekli AI Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-neon: #00F2FF;
+            --secondary-blue: #0072FF;
+            --bg-dark: #050a14;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --text-color: #e2e8f0;
+            --chat-user-bg: linear-gradient(135deg, #0072FF 0%, #00F2FF 100%);
+            --chat-bot-bg: #1e293b;
+        }
+
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: var(--bg-dark); 
+            background-image: radial-gradient(circle at 50% 50%, #112240 0%, #050a14 100%);
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; margin: 0; color: var(--text-color); overflow: hidden;
+        }
+
+        .bg-mesh {
+            position: absolute; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px; z-index: -1;
+        }
+
+        .container { display: flex; width: 1100px; height: 700px; gap: 25px; padding: 20px; z-index: 1; }
+        
+        .chat-wrapper { 
+            flex: 1; background: var(--panel-bg); border-radius: 20px; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1); 
+            border: 1px solid rgba(0, 242, 255, 0.2); backdrop-filter: blur(10px);
+        }
+
+        .chat-header { 
+            background: rgba(0, 0, 0, 0.3); padding: 20px; 
+            display: flex; align-items: center; gap: 15px; 
+            border-bottom: 1px solid rgba(0, 242, 255, 0.15);
+        }
+
+        .bot-avatar { 
+            width: 45px; height: 45px; background: rgba(0, 242, 255, 0.1); 
+            border: 1px solid var(--primary-neon); border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 22px; color: var(--primary-neon); box-shadow: 0 0 10px var(--primary-neon);
+        }
+
+        .chat-body { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { padding: 12px 18px; border-radius: 12px; max-width: 80%; font-size: 14px; animation: fadeIn 0.4s; position: relative;}
+        .bot-msg { background: var(--chat-bot-bg); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .user-msg { background: var(--chat-user-bg); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .chat-input-area { padding: 20px; background: rgba(0,0,0,0.2); display: flex; gap: 15px; }
+        .chat-input-area input { flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 30px; outline: none; }
+        .chat-input-area button { padding: 0 30px; background: transparent; border: 1px solid var(--primary-neon); color: var(--primary-neon); border-radius: 30px; cursor: pointer; font-weight: 600; }
+
+        .admin-panel { flex: 1; background: #0f172a; color: #94a3b8; border-radius: 20px; padding: 25px; display: flex; flex-direction: column; border: 1px solid #1e293b; }
+        .admin-header { border-bottom: 1px solid #334155; padding-bottom: 15px; margin-bottom: 15px; }
+        .admin-header h3 { margin: 0; color: var(--primary-neon); }
+        
+        .log-area { flex: 1; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; background: #020617; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .log-item { padding: 4px 0; border-bottom: 1px solid #1e293b; }
+        .log-highlight { color: #F59E0B; font-weight: bold; }
+
+        .intervention-box { background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%); padding: 20px; border-radius: 15px; display: none; border: 1px solid #ef4444; }
+        .intervention-box textarea { width: 100%; height: 70px; border-radius: 8px; padding: 10px; margin-top: 10px; resize: none; border: none; }
+        .intervention-box button { margin-top: 10px; width: 100%; padding: 10px; background: #fff; color: #b91c1c; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+
+<div class="container">
+    <div class="chat-wrapper">
+        <div class="chat-header">
+            <div class="bot-avatar">🤖</div>
+            <div>
+                <div style="font-weight: 600; color: white;" id="botTitle">DEXAPT Visual Asistan</div>
+                <div id="memoryStat" style="font-size: 10px; color: var(--primary-neon);">Analiz ediliyor...</div>
+            </div>
+        </div>
+        <div class="chat-body" id="chatBox"></div>
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." onkeypress="if(event.key==='Enter') sendUserMessage()">
+            <button onclick="sendUserMessage()">Gönder</button>
+        </div>
+    </div>
+
+    <div class="admin-panel">
+        <div class="admin-header">
+            <h3>⚡ KONTROL MERKEZİ</h3>
+            <div id="activeUserDisplay" style="font-size: 11px; color: #10b981;">Kullanıcı Bekleniyor...</div>
+        </div>
+        <div class="log-area" id="adminLog"></div>
+        <div class="intervention-box" id="adminInterventionArea">
+            <h4 style="margin:0; color:white;">⚠️ EĞİTİM MODU</h4>
+            <div style="font-size:12px; color:#fecaca; margin-top:5px;">Soru: <b id="pendingQuestionText" style="color:white;">...</b></div>
+            <textarea id="adminAnswerInput" placeholder="Doğru cevabı girin..."></textarea>
+            <button onclick="sendAdminReply()">CEVAPLA VE ÖĞRET</button>
+        </div>
+        <button onclick="clearMemory()" style="margin-top:auto; background:none; border:1px solid #334155; color:#64748b; cursor:pointer; padding:8px; border-radius:5px; font-size:11px;">Belleği Sıfırla</button>
+    </div>
+</div>
+
+<script>
+    // --- 1. AYARLAR VE SÖZLÜKLER ---
+    const varsayilanlar = {
+        "merhaba": "Selam! DEXAPT dünyasına hoş geldiniz.",
+        "fiyat": "Fiyatlandırma seçeneklerimiz işletme ihtiyacınıza göre optimize edilir.",
+        "dexapt": "Dexapt, insan ve yapay zekayı birleştiren hibrit bir iş gücü platformudur.",
+        "destek": "Bize her zaman ulaşabilirsiniz.",
+        "saat": "7/24 hizmetinizdeyiz!"
+    };
+
+    // İkon Eşleştirme (Görsel Zeka)
+    const ikonlar = {
+        "merhaba": "👋",
+        "fiyat": "💰",
+        "dexapt": "🚀",
+        "destek": "🛠️",
+        "saat": "⏰",
+        "teşekkür": "🙏",
+        "güle güle": "👋",
+        "bilmiyorum": "🔍"
+    };
+
+    let bilgiBankasi = JSON.parse(localStorage.getItem("dexapt_memory")) || varsayilanlar;
+    let userName = sessionStorage.getItem("dexapt_user") || "";
+    let bekleyenSoru = "";
+    let botWaitMode = false;
+    let askingName = false;
+
+    // --- 2. BAŞLATICI ---
+    window.onload = () => {
+        updateStats();
+        if (!userName) {
+            addMessage("Hoş geldiniz ✨. Ben DEXAPT. Sizinle tanışmak isterim, adınız nedir?", 'bot-msg');
+            askingName = true;
+        } else {
+            addMessage(`Merhaba ${userName}! Bugün sana nasıl yardımcı olabilirim?`, 'bot-msg');
+            document.getElementById("activeUserDisplay").innerText = `Aktif Kullanıcı: ${userName}`;
+        }
+        logToAdmin("Sistem çevrimiçi.");
+    };
+
+    // --- 3. MESAJ MANTIĞI ---
+    function sendUserMessage() {
+        if (botWaitMode) return;
+        const input = document.getElementById("userInput");
+        const msg = input.value.trim();
+        if (!msg) return;
+
+        addMessage(msg, 'user-msg');
+        input.value = "";
+
+        if (askingName) {
+            userName = msg;
+            sessionStorage.setItem("dexapt_user", userName);
+            askingName = false;
+            document.getElementById("activeUserDisplay").innerText = `Aktif Kullanıcı: ${userName}`;
+            setTimeout(() => {
+                addMessage(`Memnun oldum ${userName}! Sana yardımcı olmak için hazırım.`, 'bot-msg');
+            }, 600);
+            return;
+        }
+
+        setTimeout(() => {
+            const lowerMsg = msg.toLowerCase();
+            let eslesme = null;
+
+            for (let anahtar in bilgiBankasi) {
+                if (lowerMsg.includes(anahtar.toLowerCase())) {
+                    eslesme = anahtar;
+                    break;
+                }
+            }
+
+            if (eslesme) {
+                let cevap = bilgiBankasi[eslesme];
+                // İKON EKLEME MANTIĞI:
+                let ikon = ikonlar[eslesme] || "🤖";
+                addMessage(`${ikon} ${userName}, ${cevap}`, 'bot-msg');
+                logToAdmin(`Bot: ${eslesme} anahtarıyla cevap verdi.`);
+            } else {
+                triggerAdmin(msg);
+            }
+        }, 700);
+    }
+
+    function triggerAdmin(question) {
+        botWaitMode = true;
+        bekleyenSoru = question;
+        addMessage(`Üzgünüm ${userName}, bunu henüz öğrenmedim. Hemen uzmanıma danışıyorum... 🔍`, 'bot-msg');
+        
+        document.getElementById("pendingQuestionText").innerText = question;
+        document.getElementById("adminInterventionArea").style.display = "block";
+        document.getElementById("adminAnswerInput").focus();
+        logToAdmin(`⚠️ BİLİNMİYOR: "${question}"`, true);
+    }
+
+    function sendAdminReply() {
+        const input = document.getElementById("adminAnswerInput");
+        const answer = input.value.trim();
+        if (!answer) return;
+
+        addMessage(`✅ ${answer}`, 'bot-msg');
+        
+        bilgiBankasi[bekleyenSoru.toLowerCase()] = answer;
+        localStorage.setItem("dexapt_memory", JSON.stringify(bilgiBankasi));
+        
+        document.getElementById("adminInterventionArea").style.display = "none";
+        input.value = "";
+        botWaitMode = false;
+        updateStats();
+        logToAdmin(`✅ Yeni bilgi eklendi.`);
+    }
+
+    // --- YARDIMCILAR ---
+    function addMessage(text, type) {
+        const box = document.getElementById("chatBox");
+        const div = document.createElement("div");
+        div.className = `message ${type}`;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function logToAdmin(text, highlight = false) {
+        const log = document.getElementById("adminLog");
+        const div = document.createElement("div");
+        div.className = `log-item ${highlight ? 'log-highlight' : ''}`;
+        div.innerText = `> ${text}`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function updateStats() {
+        const count = Object.keys(bilgiBankasi).length;
+        document.getElementById("memoryStat").innerText = `Zeka: ${count} Kavram`;
+    }
+
+    function clearMemory() {
+        if(confirm("Tüm hafızayı sıfırlamak istiyor musunuz?")) {
+            localStorage.clear();
+            sessionStorage.clear();
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
