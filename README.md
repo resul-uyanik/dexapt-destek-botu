@@ -28,4 +28,4 @@ DEXAPT, modern web teknolojileriyle geliştirilmiş, yerel depolama tabanlı din
 
 ```text
 ├── dexapt destek botu.html   # Tüm HTML, CSS ve JavaScript mimarisini içeren ana dosya
-└── resim/                    # Arka plan, bot ikonları ve logolar (Örn: ytb.png)
+└── resim/                    # Arka plan, bot ikonları ve logolar
